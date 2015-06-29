@@ -18,15 +18,25 @@ $(document).on("scrollstop", function() {
 
     /* footer's height within active page (remove -1 for unfixed) */
     footer = $(".ui-footer", activePage).outerHeight() - 1,
+    
+    view = $('.ui-content .view', activePage),
 
     /* total height to scroll */
     scrollEnd = contentHeight - screenHeight + header + footer;
+    
+    // If there is no View on the page, don't do anything.
+    if (!view[0]) { return; }
 
     /* if total scrolled value is equal or greater
        than total height of content div (total scroll)
        and active page is the target page (pageX not any other page)
        call addMore() function */
     if (activePage[0].id == drupalgap_get_page_id() && scrolled >= scrollEnd) {
+      
+      // @TODO this is reacting on every page in the app, until we make it to
+      // the last page.
+      
+      // @TODO this is reacting when a page navigates.
       
       var options = _views_embed_view_options;
       var results = _views_embed_view_results;
