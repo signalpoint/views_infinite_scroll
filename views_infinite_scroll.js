@@ -33,11 +33,6 @@ $(document).on("scrollstop", function() {
        call addMore() function */
     if (activePage[0].id == drupalgap_get_page_id() && scrolled >= scrollEnd) {
       
-      // @TODO this is reacting on every page in the app, until we make it to
-      // the last page.
-      
-      // @TODO this is reacting when a page navigates.
-      
       var options = _views_embed_view_options;
       var results = _views_embed_view_results;
       
