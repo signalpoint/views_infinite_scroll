@@ -39,7 +39,7 @@ $(document).on("scrollstop", function() {
       //console.log('on page ' + (parseInt(results.view.page) + 1) + ' of ' + results.view.pages);
       
       // If we're at the last page, stop drop and roll.
-      if (results.view.page == results.view.pages - 1) { return; }
+      if (results.view.page == null || results.view.page == results.view.pages - 1) { return; }
 
       //dpm('options');
       //console.log(options);
