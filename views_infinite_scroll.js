@@ -23,15 +23,30 @@ $(document).on("scrollstop", function() {
 
     /* total height to scroll */
     scrollEnd = contentHeight - screenHeight + header + footer;
-    
+
     // If there is no View on the page, don't do anything.
     if (!view[0]) { return; }
+    
+    // Only act on the current page.
+    if (activePage[0].id != drupalgap_get_page_id()) { return; }
 
     /* if total scrolled value is equal or greater
        than total height of content div (total scroll)
        and active page is the target page (pageX not any other page)
        call addMore() function */
-    if (activePage[0].id == drupalgap_get_page_id() && scrolled >= scrollEnd) {
+    if (scrolled >= scrollEnd) {
+      
+      // SCROLLED TO THE BOTTOM...
+      
+      console.log('BOTTOM');
+      //console.log('activePage: ' + activePage);
+      //console.log('scrolled: ' + scrolled);
+      //console.log('screenHeight: ' + screenHeight);
+      //console.log('contentHeight: ' + contentHeight);
+      //console.log('header: ' + header);
+      //console.log('footer: ' + footer);
+      //console.log('view: ' + view);
+      //console.log('scrollEnd: ' + scrollEnd);
       
       var options = _views_embed_view_options;
       var results = _views_embed_view_results;
@@ -40,13 +55,35 @@ $(document).on("scrollstop", function() {
       
       // If we're at the last page, stop drop and roll.
       if (results.view.page == null || results.view.page == results.view.pages - 1) { return; }
+      
+      // Determine the next page.
+      var next_page = parseInt(results.view.page) + 1;
+      
+      // To keep the DOM slim, if we've made it past the second page, will
+      // remove the first page. This concept will continue as paging progresses,
+      // essentially only ever having 2 pages in the DOM at the same time.
+      var pages_allowed = 2;
+      if (next_page >= pages_allowed) {
+
+        // Figure out the range of items to remove from the list.
+        //var lower = (next_page - pages_allowed) * results.view.limit;
+        //var upper = (next_page - 1) * results.view.limit;
+        var lower = 0;
+        var upper = results.view.limit;
+        var page_to_delete = next_page - pages_allowed;
+        console.log('I should delete page ' + page_to_delete + ', from ' + lower + ' to ' + upper);
+        var selector = views_infinite_scroll_selector();
+        for (var i = 0; i < upper; i++) { $(selector + ' li:eq(0)').remove(); }
+        $(selector).listview();
+        $(selector).listview('refresh');
+      }
 
       //dpm('options');
       //console.log(options);
       //dpm('results');
       //console.log(results);
 
-      var next_page = parseInt(results.view.page) + 1;
+      
       var new_path = options.path + '&page=' + next_page;
       views_datasource_get_view_result(new_path, {
           success: function(results) {
@@ -75,7 +112,7 @@ $(document).on("scrollstop", function() {
               // Append the rows html to the results container.
               // @TODO this only works for ul/ol li's, need to add support for
               // unformatted and table formats.
-              var selector = _views_embed_view_selector + ' .views-results';
+              var selector = views_infinite_scroll_selector();
               $(selector).append(rows);
               $(selector).listview();
               $(selector).listview('refresh');
@@ -88,4 +125,29 @@ $(document).on("scrollstop", function() {
       });
 
     }
+    else if (scrolled == 0) {
+      
+      // SCROLLED TO THE TOP...
+      
+      console.log('TOP');
+      //console.log('activePage: ' + activePage);
+      //console.log('scrolled: ' + scrolled);
+      //console.log('screenHeight: ' + screenHeight);
+      //console.log('contentHeight: ' + contentHeight);
+      //console.log('header: ' + header);
+      //console.log('footer: ' + footer);
+      //console.log('view: ' + view);
+      //console.log('scrollEnd: ' + scrollEnd);
+
+    }
 });
+
+/**
+ *
+ */
+function views_infinite_scroll_selector() {
+  try {
+    return _views_embed_view_selector + ' .views-results';
+  }
+  catch (error) { console.log('views_infinite_scroll_selector - ' + error); }
+}
