@@ -58,12 +58,12 @@ $(document).on("scrollstop", function() {
 
     // If there is no View on the page, don't do anything.
     if (!view[0]) { return; }
-    
+
     var page_id = drupalgap_get_page_id();
-    
+
     // Only act on the current page.
     if (activePage[0].id != page_id) { return; }
-    
+
     // Set up the context, if it wasn't already.
     if (typeof _views_infinite_scroll_context[page_id] === 'undefined') {
       _views_infinite_scroll_context[page_id] = {
@@ -80,31 +80,23 @@ $(document).on("scrollstop", function() {
        than total height of content div (total scroll)
        and active page is the target page (pageX not any other page)
        call addMore() function */
-    
+
     var direction = null;
-    if (scrolled >= scrollEnd) {
+    if (scrolled >= scrollEnd) { // SCROLLED TO THE BOTTOM...
       direction = 'down';
-      
-      // SCROLLED TO THE BOTTOM...
-      
-
     }
-    else if (scrolled == 0) {
-      
+    else if (scrolled == 0) { // SCROLLED TO THE TOP...
       direction = 'up';
-      
-      // SCROLLED TO THE TOP...
-
     }
     if (direction === null) { return; }
-      
+
     // If stopping, reset and return.
     if (_views_infinite_scroll_stop) {
       _views_infinite_scroll_stop = false;
       return;
     }
-    
-    console.log(direction);
+
+    //console.log(direction);
     //console.log('activePage: ' + activePage);
     //console.log('scrolled: ' + scrolled);
     //console.log('screenHeight: ' + screenHeight);
@@ -128,13 +120,9 @@ $(document).on("scrollstop", function() {
       if (results.view.page == 0) { return; }
     }
     else { return; }
-    
-    
+
     // Determine the next page, and hang onto it for the directional context. If
     // there was an existing context, use it and increment/decrement as needed.
-    console.log(_views_infinite_scroll_context[page_id].up);
-    console.log(_views_infinite_scroll_context[page_id].down);
-    console.log('----');
     var next_page = null;
     if (direction == 'down') {
       next_page = parseInt(results.view.page) + 1;
@@ -142,9 +130,6 @@ $(document).on("scrollstop", function() {
         next_page = _views_infinite_scroll_context[page_id].down.last_page;
         _views_infinite_scroll_context[page_id].down.last_page = null;
       }
-      //else {
-        //_views_infinite_scroll_context[page_id].down.last_page = next_page;
-      //}
     }
     else if (direction == 'up') {
       next_page = parseInt(results.view.page) - views_infinite_scroll_pages_allowed();
@@ -152,9 +137,6 @@ $(document).on("scrollstop", function() {
         next_page = _views_infinite_scroll_context[page_id].up.last_page;
         _views_infinite_scroll_context[page_id].up.last_page = null;
       }
-      //else {
-        //_views_infinite_scroll_context[page_id].up.last_page = next_page;
-      //}
     }
     
     if (next_page < 0) { next_page = 0; }
@@ -189,32 +171,27 @@ $(document).on("scrollstop", function() {
 
     }
     
-    console.log(_views_infinite_scroll_context[page_id].up);
-    console.log(_views_infinite_scroll_context[page_id].down);
-    
     if (slim) {
-      console.log('I should delete page ' + page_to_delete + ', from ' + lower + ' to ' + upper);
+      //console.log('I should delete page ' + page_to_delete + ', from ' + lower + ' to ' + upper);
       var selector = views_infinite_scroll_selector();
       for (var i = lower; i < upper; i++) {
         var _selector = selector + ' li:eq(0)';
         if (direction == 'up') { _selector = selector + ' li:eq(' + lower + ')'; }
         var item = $(_selector);
-        if (i == lower || i == upper - 1) {
-          console.log('remove: ' + $(item).html());  
-        }
+        //if (i == lower || i == upper - 1) {
+        //  console.log('remove: ' + $(item).html());  
+        //}
         $(item).remove(); // @TODO probably bad performance here
       }
       $(selector).listview();
       $(selector).listview('refresh');
     }
-    
 
     //dpm('options');
     //console.log(options);
     //dpm('results');
     //console.log(results);
 
-    
     var new_path = options.path + '&page=' + next_page;
     views_datasource_get_view_result(new_path, {
         success: function(results) {
@@ -249,11 +226,17 @@ $(document).on("scrollstop", function() {
             $(selector).listview();
             $(selector).listview('refresh');
             
+            // If we scrolled up, scroll back down to the row we were at.
+            if (direction == 'up') {
+              var _selector = selector + ' li:eq(' + results.view.limit + ')';
+              scrollToElement(_selector, 0, -$(_selector).height());
+            }
+            
             // Unblock the stop, if we we're stopped.
             if (_views_infinite_scroll_stop) {
               _views_infinite_scroll_stop = false;
             }
-  
+
           }
           catch (error) {
             console.log('views_embed_view - success - ' + error);
