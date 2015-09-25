@@ -1,3 +1,5 @@
+var _views_infinite_scroll_stop = false;
+
 /**
  * @see: http://stackoverflow.com/a/24728709/763010
  */
@@ -39,6 +41,12 @@ $(document).on("scrollstop", function() {
       // SCROLLED TO THE BOTTOM...
       
       console.log('BOTTOM');
+      
+      if (_views_infinite_scroll_stop) {
+        _views_infinite_scroll_stop = false;
+        return;
+      }
+      
       //console.log('activePage: ' + activePage);
       //console.log('scrolled: ' + scrolled);
       //console.log('screenHeight: ' + screenHeight);
@@ -59,12 +67,14 @@ $(document).on("scrollstop", function() {
       // Determine the next page.
       var next_page = parseInt(results.view.page) + 1;
       
-      // To keep the DOM slim, if we've made it past the second page, will
+      // To keep the DOM slim, if we've made it past the second page, we'll
       // remove the first page. This concept will continue as paging progresses,
       // essentially only ever having 2 pages in the DOM at the same time.
       var pages_allowed = 2;
       if (next_page >= pages_allowed) {
 
+        _views_infinite_scroll_stop = true;
+        
         // Figure out the range of items to remove from the list.
         //var lower = (next_page - pages_allowed) * results.view.limit;
         //var upper = (next_page - 1) * results.view.limit;
@@ -73,7 +83,13 @@ $(document).on("scrollstop", function() {
         var page_to_delete = next_page - pages_allowed;
         console.log('I should delete page ' + page_to_delete + ', from ' + lower + ' to ' + upper);
         var selector = views_infinite_scroll_selector();
-        for (var i = 0; i < upper; i++) { $(selector + ' li:eq(0)').remove(); }
+        for (var i = 0; i < upper; i++) {    
+          var item = $(selector + ' li:eq(0)');
+          if (i == 0 || i == upper - 1) {
+            console.log('remove: ' + $(item).html());  
+          }
+          $(item).remove(); // @TODO probably bad performance here
+        }
         $(selector).listview();
         $(selector).listview('refresh');
       }
@@ -116,6 +132,10 @@ $(document).on("scrollstop", function() {
               $(selector).append(rows);
               $(selector).listview();
               $(selector).listview('refresh');
+              
+              if (_views_infinite_scroll_stop) {
+                _views_infinite_scroll_stop = false;
+              }
     
             }
             catch (error) {
