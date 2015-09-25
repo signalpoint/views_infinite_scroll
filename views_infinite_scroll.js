@@ -1,4 +1,23 @@
+// A stop mechanism to prevent the re-triggering of the scroll event's
+// implementation upon list redraws.
 var _views_infinite_scroll_stop = false;
+var _views_infinite_scroll_pages_allowed = 2;
+
+/**
+ * Implements hook_install().
+ */
+function views_infinite_scroll_install() {
+  try {
+    // Load settings, and set default's if none were provided.
+    if (typeof drupalgap.settings.views_infinite_scroll === 'undefined') {
+      drupalgap.settings.views_infinite_scroll = {};
+    }
+    if (typeof drupalgap.settings.views_infinite_scroll.pages_allowed !== 'undefined') {
+      _views_infinite_scroll_pages_allowed = drupalgap.settings.views_infinite_scroll.pages_allowed;
+    }
+  }
+  catch (error) { console.log('views_infinite_scroll_install - ' + error); }
+}
 
 /**
  * @see: http://stackoverflow.com/a/24728709/763010
@@ -42,6 +61,7 @@ $(document).on("scrollstop", function() {
       
       console.log('BOTTOM');
       
+      // If stopping, reset and return.
       if (_views_infinite_scroll_stop) {
         _views_infinite_scroll_stop = false;
         return;
@@ -70,17 +90,17 @@ $(document).on("scrollstop", function() {
       // To keep the DOM slim, if we've made it past the second page, we'll
       // remove the first page. This concept will continue as paging progresses,
       // essentially only ever having 2 pages in the DOM at the same time.
-      var pages_allowed = 2;
-      if (next_page >= pages_allowed) {
+      if (next_page >= _views_infinite_scroll_pages_allowed) {
 
+        // Prevent event from firing upon redraw with a stop block.
         _views_infinite_scroll_stop = true;
         
         // Figure out the range of items to remove from the list.
-        //var lower = (next_page - pages_allowed) * results.view.limit;
+        //var lower = (next_page - _views_infinite_scroll_pages_allowed) * results.view.limit;
         //var upper = (next_page - 1) * results.view.limit;
         var lower = 0;
         var upper = results.view.limit;
-        var page_to_delete = next_page - pages_allowed;
+        var page_to_delete = next_page - _views_infinite_scroll_pages_allowed;
         console.log('I should delete page ' + page_to_delete + ', from ' + lower + ' to ' + upper);
         var selector = views_infinite_scroll_selector();
         for (var i = 0; i < upper; i++) {    
@@ -133,6 +153,7 @@ $(document).on("scrollstop", function() {
               $(selector).listview();
               $(selector).listview('refresh');
               
+              // Unblock the stop, if we we're stopped.
               if (_views_infinite_scroll_stop) {
                 _views_infinite_scroll_stop = false;
               }
@@ -158,6 +179,21 @@ $(document).on("scrollstop", function() {
       //console.log('footer: ' + footer);
       //console.log('view: ' + view);
       //console.log('scrollEnd: ' + scrollEnd);
+      
+      // If stopping, reset and return.
+      if (_views_infinite_scroll_stop) {
+        _views_infinite_scroll_stop = false;
+        return;
+      }
+      
+      var options = _views_embed_view_options;
+      var results = _views_embed_view_results;
+      
+      // If we're at the first page, stop drop and roll.
+      if (results.view.page == 0) { return; }
+      
+      // Determine the previous page (aka .
+      var previous_page = results.view.page;
 
     }
 });
