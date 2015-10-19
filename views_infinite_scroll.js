@@ -105,9 +105,9 @@ $(document).on("scrollstop", function() {
     //console.log('footer: ' + footer);
     //console.log('view: ' + view);
     //console.log('scrollEnd: ' + scrollEnd);
-    
-    var options = _views_embed_view_options;
-    var results = _views_embed_view_results;
+
+    var options = views_embedded_view_get(page_id, 'options');
+    var results = views_embedded_view_get(page_id, 'results');
     
     //console.log('on page ' + (parseInt(results.view.page) + 1) + ' of ' + results.view.pages);
     
@@ -133,8 +133,10 @@ $(document).on("scrollstop", function() {
     }
     else if (direction == 'up') {
       next_page = parseInt(results.view.page) - views_infinite_scroll_pages_allowed();
+      dpm('next page up: ' + next_page);
       if (_views_infinite_scroll_context[page_id].up.last_page != null) {
         next_page = _views_infinite_scroll_context[page_id].up.last_page;
+        dpm('next page up context: ' + next_page);
         _views_infinite_scroll_context[page_id].up.last_page = null;
       }
     }
@@ -156,6 +158,7 @@ $(document).on("scrollstop", function() {
       lower = 0;
       upper = results.view.limit;
       page_to_delete = next_page - views_infinite_scroll_pages_allowed();
+      dpm('page_to_delete - down : ' + page_to_delete);
       _views_infinite_scroll_context[page_id].up.last_page = page_to_delete;
       slim = true;
 
@@ -166,6 +169,7 @@ $(document).on("scrollstop", function() {
       lower = (next_page + views_infinite_scroll_pages_allowed() - 1) * results.view.limit;
       upper = lower + results.view.limit;
       page_to_delete = next_page + views_infinite_scroll_pages_allowed();
+      dpm('page_to_delete - up : ' + page_to_delete);
       _views_infinite_scroll_context[page_id].down.last_page = page_to_delete;
       slim = true;
 
@@ -174,6 +178,7 @@ $(document).on("scrollstop", function() {
     if (slim) {
       //console.log('I should delete page ' + page_to_delete + ', from ' + lower + ' to ' + upper);
       var selector = views_infinite_scroll_selector();
+      console.log('slimming: ' + selector);
       for (var i = lower; i < upper; i++) {
         var _selector = selector + ' li:eq(0)';
         if (direction == 'up') { _selector = selector + ' li:eq(' + lower + ')'; }
@@ -197,30 +202,33 @@ $(document).on("scrollstop", function() {
         success: function(results) {
           try {
             //console.log(results);
-            
+
             // Replace the results.
-            _views_embed_view_results = results;
-            _views_embed_view_options.results = results;
-            
+            views_embedded_view_set(page_id, 'results', results);
+            //options.results = results; // @TODO do we need this line?!?!
+
             // Extract the root and child object name.
             var root = results.view.root;
             var child = results.view.child;
-            
+
             // Render all the rows.
-            var result_formats = drupalgap_views_get_result_formats(_views_embed_view_options);
+            var result_formats = drupalgap_views_get_result_formats(
+              views_embedded_view_get(page_id, 'options')
+            );
             var rows = '' + drupalgap_views_render_rows(
-              _views_embed_view_options,
-              _views_embed_view_results,
+              options,
+              results,
               root,
               child,
               result_formats.open_row,
               result_formats.close_row
             );
-            
+
             // Append the rows html to the results container.
             // @TODO this only works for ul/ol li's, need to add support for
             // unformatted and table formats.
             var selector = views_infinite_scroll_selector();
+            console.log('expanding (' + direction + '): ' + selector);
             if (direction == 'down') { $(selector).append(rows); }
             else { $(selector).prepend(rows); }
             $(selector).listview();
@@ -250,7 +258,7 @@ $(document).on("scrollstop", function() {
  */
 function views_infinite_scroll_selector() {
   try {
-    return _views_embed_view_selector + ' .views-results';
+    return views_embedded_view_get(drupalgap_get_page_id(), 'selector') + ' .views-results';
   }
   catch (error) { console.log('views_infinite_scroll_selector - ' + error); }
 }
