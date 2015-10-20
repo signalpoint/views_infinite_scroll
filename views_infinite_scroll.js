@@ -1,7 +1,3 @@
-// A stop mechanism to prevent the re-triggering of the scroll event's
-// implementation upon list redraws.
-var _views_infinite_scroll_stop = false;
-
 var _views_infinite_scroll_context = {};
 
 /**
@@ -67,6 +63,7 @@ $(document).on("scrollstop", function() {
     // Set up the context, if it wasn't already.
     if (typeof _views_infinite_scroll_context[page_id] === 'undefined') {
       _views_infinite_scroll_context[page_id] = {
+        last_direction: null,
         down: {
           last_page: null
         },
@@ -81,18 +78,23 @@ $(document).on("scrollstop", function() {
        and active page is the target page (pageX not any other page)
        call addMore() function */
 
+    // Did we make it to the top or bottom?
     var direction = null;
-    if (scrolled >= scrollEnd) { // SCROLLED TO THE BOTTOM...
-      direction = 'down';
-    }
-    else if (scrolled == 0) { // SCROLLED TO THE TOP...
-      direction = 'up';
-    }
+    if (scrolled >= scrollEnd) { direction = 'down'; } // SCROLLED TO THE BOTTOM...
+    else if (scrolled == 0) { direction = 'up'; } // SCROLLED TO THE TOP...
     if (direction === null) { return; }
+    
+    // Set aside the direction we're moving, if it hasn't been already. Later
+    // we'll need to determine if we've switched directions or not.
+    if (!_views_infinite_scroll_context[page_id].last_direction) {
+      _views_infinite_scroll_context[page_id].last_direction = direction;
+    }
+    var last_direction = _views_infinite_scroll_context[page_id].last_direction;
 
-    // If stopping, reset and return.
-    if (_views_infinite_scroll_stop) {
-      _views_infinite_scroll_stop = false;
+    // If stopping, reset and return. A stop mechanism is used to prevent the
+    // re-triggering of the scroll event's implementation upon list redraws.
+    if (views_embedded_view_get(page_id, 'views_infinite_scroll_stop')) {
+      views_embedded_view_set(page_id, 'views_infinite_scroll_stop', false);
       return;
     }
 
@@ -124,27 +126,44 @@ $(document).on("scrollstop", function() {
     // Determine the next page, and hang onto it for the directional context. If
     // there was an existing context, use it and increment/decrement as needed.
     var next_page = null;
+    var current_page = parseInt(results.view.page);
+    var pages_allowed = views_infinite_scroll_pages_allowed();
     if (direction == 'down') {
-      next_page = parseInt(results.view.page) + 1;
-      if (_views_infinite_scroll_context[page_id].down.last_page != null) {
-        next_page = _views_infinite_scroll_context[page_id].down.last_page;
-        _views_infinite_scroll_context[page_id].down.last_page = null;
+      // Switching direction.
+      if (direction != last_direction) {
+        next_page = current_page + pages_allowed;
       }
+      // Same direction.
+      else {
+        next_page = current_page + 1;
+      }
+      dpm('next page down: ' + next_page);
+      //if (_views_infinite_scroll_context[page_id].down.last_page != null) {
+      //  next_page = _views_infinite_scroll_context[page_id].down.last_page;
+      //  _views_infinite_scroll_context[page_id].down.last_page = null;
+      //}
     }
     else if (direction == 'up') {
-      next_page = parseInt(results.view.page) - views_infinite_scroll_pages_allowed();
-      dpm('next page up: ' + next_page);
-      if (_views_infinite_scroll_context[page_id].up.last_page != null) {
-        next_page = _views_infinite_scroll_context[page_id].up.last_page;
-        dpm('next page up context: ' + next_page);
-        _views_infinite_scroll_context[page_id].up.last_page = null;
+      // Switching direction.
+      if (direction != last_direction) {
+        next_page = current_page - pages_allowed;
       }
+      // Same direction.
+      else {
+        next_page = current_page - 1;
+      }
+      dpm('next page up: ' + next_page);
+      //if (_views_infinite_scroll_context[page_id].up.last_page != null) {
+      //  next_page = _views_infinite_scroll_context[page_id].up.last_page;
+      //  dpm('next page up context: ' + next_page);
+      //  _views_infinite_scroll_context[page_id].up.last_page = null;
+      //}
     }
     
     if (next_page < 0) { next_page = 0; }
     
     // Prevent event from firing upon redraw with a stop block.
-    _views_infinite_scroll_stop = true;
+    views_embedded_view_set(page_id, 'views_infinite_scroll_stop', true);
     
     // Keep the DOM slim by removing items from the top or bottom of the list,
     // depending on which direction we're scrolling.
@@ -241,8 +260,8 @@ $(document).on("scrollstop", function() {
             }
             
             // Unblock the stop, if we we're stopped.
-            if (_views_infinite_scroll_stop) {
-              _views_infinite_scroll_stop = false;
+            if (views_embedded_view_get(page_id, 'views_infinite_scroll_stop')) {
+              views_embedded_view_set(page_id, 'views_infinite_scroll_stop', false);
             }
 
           }
