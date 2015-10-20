@@ -3,12 +3,11 @@
  */
 function views_infinite_scroll_install() {
   try {
-    // Load settings, and set default's if none were provided.
+    // Warn if there are no settings.
     if (typeof drupalgap.settings.views_infinite_scroll === 'undefined') {
-      drupalgap.settings.views_infinite_scroll = {};
-    }
-    if (typeof drupalgap.settings.views_infinite_scroll.pages_allowed === 'undefined') {
-      drupalgap.settings.views_infinite_scroll.pages_allowed = 2;
+      var msg = 'WARNING: no settings specified for views_infinite_scroll - ' +
+        'see the README.md file for settings.js usage.'
+      console.log(msg);
     }
   }
   catch (error) { console.log('views_infinite_scroll_install - ' + error); }
@@ -19,7 +18,17 @@ function views_infinite_scroll_install() {
  */
 function views_infinite_scroll_pages_allowed() {
   try {
-    return drupalgap.settings.views_infinite_scroll.pages_allowed;
+    var pages_allowed = 2;
+    var current_router_path = drupalgap_router_path_get();
+    var pages_to_process = drupalgap.settings.views_infinite_scroll.pages;
+    for (var router_path in pages_to_process) {
+      if (!pages_to_process.hasOwnProperty(router_path)) { continue; }
+      if (current_router_path == router_path) {
+        pages_allowed = pages_to_process[router_path].pages_allowed;
+        break;
+      }
+    }
+    return pages_allowed;
   }
   catch (error) { console.log('views_infinite_scroll_pages_allowed - ' + error); }
 }
@@ -28,6 +37,7 @@ function views_infinite_scroll_pages_allowed() {
  * @see: http://stackoverflow.com/a/24728709/763010
  */
 $(document).on("scrollstop", function() {
+
     var activePage = $.mobile.pageContainer.pagecontainer("getActivePage"),
 
     /* window's scrollTop() */
@@ -57,6 +67,21 @@ $(document).on("scrollstop", function() {
 
     // Only act on the current page.
     if (activePage[0].id != page_id) { return; }
+
+    // Make sure this page's router path was specified in the settings.js file.
+    // If it wasn't then we don't want infinite scrolling on this page.
+    var found = false;
+    var current_router_path = drupalgap_router_path_get();
+    var pages_to_process = drupalgap.settings.views_infinite_scroll.pages;
+    for (var router_path in pages_to_process) {
+      if (!pages_to_process.hasOwnProperty(router_path)) { continue; }
+      var app_page = pages_to_process[router_path];
+      if (current_router_path == router_path) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) { return; }
 
     /* if total scrolled value is equal or greater
        than total height of content div (total scroll)
@@ -159,8 +184,8 @@ $(document).on("scrollstop", function() {
     else if (direction == 'up') {
 
       // Remove from the bottom of the list.
-      lower = results.view.limit;
-      upper = lower * 2;
+      lower = results.view.limit * (pages_allowed - 1);
+      upper = lower + results.view.limit;
       slim = true;
 
     }
