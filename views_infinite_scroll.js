@@ -101,11 +101,6 @@ $(document).on("scrollstop", function() {
     
     if (!views_infinite_scroll_ok()) { return; }
 
-    /* if total scrolled value is equal or greater
-       than total height of content div (total scroll)
-       and active page is the target page (pageX not any other page)
-       call addMore() function */
-
     // Did we make it to the top or bottom?
     var direction = null;
     if (scrolled >= scrollEnd) { direction = 'down'; } // SCROLLED TO THE BOTTOM...
@@ -181,6 +176,15 @@ $(document).on("scrollstop", function() {
     
     // Prevent event from firing upon redraw with a stop block.
     views_embedded_view_set(page_id, 'views_infinite_scroll_stop', true);
+
+    // Once we scroll past the number of pages allowed for the first time, hide
+    // the page title. This is because when they are scrolling back up, we want
+    // to not show the page title until they get back to the very top, otherwise
+    // the title flickers on the screen while paging up, and looks silly.
+    var page_title_selector = '#' + page_id + ' h1.page-title';
+    if (direction == 'down' && next_page == pages_allowed) {
+      $(page_title_selector).hide();
+    }
 
     // Keep the DOM slim by removing items from the top or bottom of the list,
     // depending on which direction we're scrolling.
@@ -276,6 +280,11 @@ $(document).on("scrollstop", function() {
             // Unblock the stop, if we we're stopped.
             if (views_embedded_view_get(page_id, 'views_infinite_scroll_stop')) {
               views_embedded_view_set(page_id, 'views_infinite_scroll_stop', false);
+            }
+
+            // Reveal the page title when we make it back to the top.
+            if (direction == 'up' && next_page == 0) {
+              $(page_title_selector).show();
             }
 
           }
