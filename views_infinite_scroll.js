@@ -28,6 +28,14 @@ function views_infinite_scroll_pages_allowed() {
         break;
       }
     }
+    // Warn if they are using less than 2 pages at a time, they'll get weird
+    // behavior.
+    if (pages_allowed < 2) {
+      var msg = 'WARNING: views_infinite_scroll - in settings.js, use at ' +
+        'least 2 pages for the "' + router_path + '" view, or weird things ' +
+        'will likely happen!';
+      console.log(msg);
+    }
     return pages_allowed;
   }
   catch (error) { console.log('views_infinite_scroll_pages_allowed - ' + error); }
@@ -178,7 +186,6 @@ $(document).on("scrollstop", function() {
     // depending on which direction we're scrolling.
     var lower = null;
     var upper = null;
-    var pages_allowed = views_infinite_scroll_pages_allowed();
     
     // Let's first figure out if we should slim the DOM or not, and figure out
     // the upper and lower bounds to the slim.
