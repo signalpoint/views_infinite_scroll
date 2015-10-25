@@ -25,5 +25,5 @@ drupalgap.settings.views_infinite_scroll = {
 
 ```
 
-Warning, the `pages_allowed` value must be greater than or equal to 2.
+WARNING, the `pages_allowed` value must be greater than or equal to 2.
 
