@@ -27,3 +27,38 @@ drupalgap.settings.views_infinite_scroll = {
 
 WARNING, the `pages_allowed` value must be greater than or equal to 2.
 
+# API
+
+## hook_views_infinite_scroll_page_changing()
+
+Invoked right before the page changes.
+
+```
+/**
+ * Implements hook_views_infinite_scroll_page_changing().
+ */
+function hook_views_infinite_scroll_page_changing(current_page, next_page, new_path, direction, last_direction) {
+  try {
+  }
+  catch (error) {
+    console.log('hook_views_infinite_scroll_page_changing - ' + error);
+  }
+}
+```
+
+## hook_views_infinite_scroll_page_changed()
+
+Invoked after the page has changed and the content has been rendered.
+
+```
+/**
+ * Implements hook_views_infinite_scroll_page_changed().
+ */
+function hook_views_infinite_scroll_page_changed(last_page, current_page, new_path, direction, last_direction) {
+  try {
+  }
+  catch (error) {
+    console.log('hook_views_infinite_scroll_page_changed - ' + error);
+  }
+}
+```

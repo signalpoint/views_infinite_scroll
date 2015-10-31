@@ -235,6 +235,14 @@ $(document).on("scrollstop", function() {
     //console.log(results);
 
     var new_path = options.path + '&page=' + next_page;
+    module_invoke_all(
+      'views_infinite_scroll_page_changing',
+      current_page,
+      next_page,
+      new_path,
+      direction,
+      last_direction
+    );
     views_datasource_get_view_result(new_path, {
         success: function(results) {
           try {
@@ -286,6 +294,15 @@ $(document).on("scrollstop", function() {
             if (direction == 'up' && next_page == 0) {
               $(page_title_selector).show();
             }
+
+            module_invoke_all(
+              'views_infinite_scroll_page_changed',
+              current_page, // aka 'last page'
+              next_page, // aka 'current page'
+              new_path,
+              direction,
+              last_direction
+            );
 
           }
           catch (error) {
