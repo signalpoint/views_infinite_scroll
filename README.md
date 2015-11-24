@@ -16,7 +16,16 @@ drupalgap.settings.views_infinite_scroll = {
 
     // My articles page with argument.
     'articles/%': {
-      pages_allowed: 2 // max # of Views results pages before trimming
+    
+    
+      // Max # of Views results pages allowed in the page's DOM before trimming
+      pages_allowed: 2,
+      
+      // Hides the page title after scrolling down the number of allowed pages,
+      // the title is then restored when scrolling back to the top. If the
+      // "title" block is in your theme's header region, this may cause issues
+      // with infinite scrolling, use with caution.
+      hide_title: true
     }
 
   }

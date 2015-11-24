@@ -14,20 +14,26 @@ function views_infinite_scroll_install() {
 }
 
 /**
+ * Given an optional setting name, and optional router path (defaults to current),
+ * this will return the individual setting's value from the settings.js file,
+ * or the entire settings JSON object for the router path.
+ */
+function views_infinite_scroll_settings() {
+  var setting = arguments[0] ? arguments[0] : null;
+  var router_path = arguments[1] ? arguments[1] : drupalgap_router_path_get();
+  if (setting) {
+    return drupalgap.settings.views_infinite_scroll.pages[router_path][setting];
+  }
+  return drupalgap.settings.views_infinite_scroll.pages[router_path];
+}
+
+/**
  *
  */
 function views_infinite_scroll_pages_allowed() {
   try {
-    var pages_allowed = 2;
-    var current_router_path = drupalgap_router_path_get();
-    var pages_to_process = drupalgap.settings.views_infinite_scroll.pages;
-    for (var router_path in pages_to_process) {
-      if (!pages_to_process.hasOwnProperty(router_path)) { continue; }
-      if (current_router_path == router_path) {
-        pages_allowed = pages_to_process[router_path].pages_allowed;
-        break;
-      }
-    }
+    var pages_allowed = views_infinite_scroll_settings('pages_allowed');
+    if (!pages_allowed) { pages_allowed = 2; }
     // Warn if they are using less than 2 pages at a time, they'll get weird
     // behavior.
     if (pages_allowed < 2) {
@@ -65,9 +71,11 @@ function views_infinite_scroll_ok() {
 }
 
 /**
- * @see: http://stackoverflow.com/a/24728709/763010
+ * @credit: http://stackoverflow.com/a/24728709/763010
  */
 $(document).on("scrollstop", function() {
+
+  // @TODO Add support for unfixed headers and footers.
 
     var activePage = $.mobile.pageContainer.pagecontainer("getActivePage"),
 
@@ -98,7 +106,9 @@ $(document).on("scrollstop", function() {
 
     // Only act on the current page.
     if (activePage[0].id != page_id) { return; }
-    
+
+    // @TODO consider moving this below the next section, so it only fires when
+    // we hit the top/bottom of the page.
     if (!views_infinite_scroll_ok()) { return; }
 
     // Did we make it to the top or bottom?
@@ -147,7 +157,14 @@ $(document).on("scrollstop", function() {
       if (results.view.page == null || results.view.page == results.view.pages - 1) { return; }
     }
     else if (direction == 'up') {
-      if (results.view.page == 0) { return; }
+      if (results.view.page == 0 ||
+        // Special case: made it back to the top, but never scrolled far enough
+        // down to trigger a slimming of the list.
+        (
+          results.view.page == 1 &&
+          !views_embedded_view_get(page_id, 'views_infinite_scroll_slimmed')
+        )
+      ) { return; }
     }
     else { return; }
 
@@ -177,13 +194,16 @@ $(document).on("scrollstop", function() {
     // Prevent event from firing upon redraw with a stop block.
     views_embedded_view_set(page_id, 'views_infinite_scroll_stop', true);
 
-    // Once we scroll past the number of pages allowed for the first time, hide
-    // the page title. This is because when they are scrolling back up, we want
-    // to not show the page title until they get back to the very top, otherwise
-    // the title flickers on the screen while paging up, and looks silly.
-    var page_title_selector = '#' + page_id + ' h1.page-title';
-    if (direction == 'down' && next_page == pages_allowed) {
-      $(page_title_selector).hide();
+    // If enabled, once we scroll past the number of pages allowed for the
+    // first time, hide the page title. This is because when they are
+    // scrolling back up, we want to not show the page title until they get
+    // back to the very top, otherwise the title flickers on the screen while
+    // paging up, and looks silly.
+    if (views_infinite_scroll_settings('hide_title')) {
+      var page_title_selector = '#' + page_id + ' h1.page-title';
+      if (direction == 'down' && next_page == pages_allowed) {
+        $(page_title_selector).hide();
+      }
     }
 
     // Keep the DOM slim by removing items from the top or bottom of the list,
@@ -221,10 +241,11 @@ $(document).on("scrollstop", function() {
         if (!item) { continue; }
         // Debug info.
         //if (i == lower || i == upper - 1) {
-        //  console.log('remove: ' + $(item).html());  
+        //  console.log('remove: ' + $(item).html());
         //}
         $(item).remove(); // @TODO probably bad performance here
       }
+      views_embedded_view_set(page_id, 'views_infinite_scroll_slimmed', true);
       $(selector).listview();
       $(selector).listview('refresh');
     }
