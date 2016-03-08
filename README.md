@@ -1,7 +1,12 @@
 # views_infinite_scroll
 The Views Infinite Scroll module for DrupalGap.
 
-#settings.js
+# Installation Steps
+1. Download and place module in __app__ folder.
+2. Add `Drupal.modules.contrib['views_infinite_scroll'] = {};` to your __settings.js__ file.
+3. Add the function below to your __settings.js__ file to enable views infinite scroll on your speciifc pages.
+
+# settings.js
 ```
 // Views infinite scroll settings.
 drupalgap.settings.views_infinite_scroll = {
