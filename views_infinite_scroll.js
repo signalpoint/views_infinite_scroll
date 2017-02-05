@@ -150,46 +150,53 @@ $(document).on("scrollstop", function() {
     var results = views_embedded_view_get(page_id, 'results');
 
     //console.log('on page ' + (parseInt(results.view.page) + 1) + ' of ' + results.view.pages);
+    
+    // Determine the next page, and hang onto it for the directional context. If
+    // there was an existing context, use it and increment/decrement as needed.
+    var next_page = null;
+    var current_page = parseInt(results.view.page);
+    var pages_allowed = views_infinite_scroll_pages_allowed();
 
+    if (direction == 'down') {
+      if (+next_page == +results.view.page == +current_page) {
+        next_page = results.view.page + 1;
+      } else {
+        next_page = current_page + 1;
+      }
+    } else if (direction == 'up') {
+      if (direction != last_direction) {
+        // Switching direction.
+        if (scrolled != 0) {
+          next_page = current_page - pages_allowed;
+        } else {
+          next_page = results.view.page;
+        }
+      }
+      // Same direction.
+      else { next_page = current_page - 1; }
+      //dpm('next page up: ' + next_page);
+    }
+    
+    views_embedded_view_set(page_id, 'views_infinite_scroll_last_direction', direction);
+    
+    if (next_page < 0) { next_page = 0; }
+    
     // If we're at the last page (or back to the first depending on direction),
     // stop drop and roll.
     if (direction == 'down') {
       if (results.view.page == null || results.view.page == results.view.pages - 1) { return; }
     }
     else if (direction == 'up') {
-      if (results.view.page == 0 ||
+      if (results.view.page == 0 || (results.view.page == 1 && !views_embedded_view_get(page_id, 'views_infinite_scroll_slimmed'))) {
         // Special case: made it back to the top, but never scrolled far enough
         // down to trigger a slimming of the list.
-        (
-          results.view.page == 1 &&
-          !views_embedded_view_get(page_id, 'views_infinite_scroll_slimmed')
-        )
-      ) { return; }
+        return;
+      } else if (scrolled == 0) {
+        return;
+      }
+
     }
     else { return; }
-
-    // Determine the next page, and hang onto it for the directional context. If
-    // there was an existing context, use it and increment/decrement as needed.
-    var next_page = null;
-    var current_page = parseInt(results.view.page);
-    var pages_allowed = views_infinite_scroll_pages_allowed();
-    if (direction == 'down') {
-      // Switching direction.
-      if (direction != last_direction) { next_page = current_page + pages_allowed; }
-      // Same direction.
-      else { next_page = current_page + 1; }
-      //dpm('next page down: ' + next_page);
-    }
-    else if (direction == 'up') {
-      // Switching direction.
-      if (direction != last_direction) { next_page = current_page - pages_allowed; }
-      // Same direction.
-      else { next_page = current_page - 1; }
-      //dpm('next page up: ' + next_page);
-    }
-    views_embedded_view_set(page_id, 'views_infinite_scroll_last_direction', direction);
-    
-    if (next_page < 0) { next_page = 0; }
     
     // Prevent event from firing upon redraw with a stop block.
     views_embedded_view_set(page_id, 'views_infinite_scroll_stop', true);
@@ -342,4 +349,3 @@ function views_infinite_scroll_selector() {
   }
   catch (error) { console.log('views_infinite_scroll_selector - ' + error); }
 }
-
