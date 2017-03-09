@@ -2,15 +2,12 @@
  * Implements hook_install().
  */
 function views_infinite_scroll_install() {
-  try {
-    // Warn if there are no settings.
-    if (typeof drupalgap.settings.views_infinite_scroll === 'undefined') {
-      var msg = 'WARNING: no settings specified for views_infinite_scroll - ' +
-        'see the README.md file for settings.js usage.'
-      console.log(msg);
-    }
+  // Warn if there are no settings.
+  if (typeof drupalgap.settings.views_infinite_scroll === 'undefined') {
+    var msg = 'WARNING: no settings specified for views_infinite_scroll - ' +
+      'see the README.md file for settings.js usage.';
+    console.log(msg);
   }
-  catch (error) { console.log('views_infinite_scroll_install - ' + error); }
 }
 
 /**
@@ -250,10 +247,8 @@ $(document).on("scrollstop", function() {
       $(selector).listview('refresh');
     }
 
-    //dpm('options');
-    //console.log(options);
-    //dpm('results');
-    //console.log(results);
+    //console.log('options', options);
+    //console.log('result', results);
 
     var new_path = options.path + '&page=' + next_page;
     module_invoke_all(
@@ -291,18 +286,24 @@ $(document).on("scrollstop", function() {
             );
 
             // Append the rows html to the results container.
-            // @TODO this only works for ul/ol li's, need to add support for
-            // unformatted and table formats.
             var selector = views_infinite_scroll_selector();
             //console.log('expanding (' + direction + '): ' + selector);
             if (direction == 'down') { $(selector).append(rows); }
             else { $(selector).prepend(rows); }
-            $(selector).listview();
-            $(selector).listview('refresh');
+            var listElement = null;
+            if (options.format == 'ul' || options.format == 'ol') {
+              listElement = 'li';
+              $(selector).listview();
+              $(selector).listview('refresh');
+            }
+            else {
+              listElement = 'div';
+              $(selector).trigger('create');
+            }
             
             // If we scrolled up, scroll back down to the row we were at.
             if (direction == 'up') {
-              var _selector = selector + ' li:eq(' + results.view.limit + ')';
+              var _selector = selector + ' ' + listElement + ':eq(' + results.view.limit + ')';
               scrollToElement(_selector, 0, -$(_selector).height());
             }
             
